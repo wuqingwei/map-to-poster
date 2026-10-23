@@ -86,6 +86,19 @@ function initArtisticMap(containerId, center, zoom) {
 		preserveDrawingBuffer: true
 	});
 
+	// MapLibre's stylesheet sets .maplibregl-map { position: relative }, which
+	// can win over the Tailwind `absolute` utility depending on the bundle's
+	// CSS order (it does in the extension build). A relatively positioned
+	// container ignores top/bottom, its height collapses to 0 and the map
+	// becomes invisible even though it renders. Pin the positioning inline
+	// (updatePreviewStyles maintains top/right/bottom/left inline as well),
+	// then re-measure so the canvas matches the restored box.
+	const containerEl = document.getElementById(containerId);
+	if (containerEl) {
+		containerEl.style.position = 'absolute';
+		artisticMap.resize();
+	}
+
 	artisticMap.scrollZoom.setWheelZoomRate(1);
 	artisticMap.scrollZoom.setZoomRate(1 / 600);
 
