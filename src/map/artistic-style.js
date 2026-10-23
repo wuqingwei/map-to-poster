@@ -1,13 +1,17 @@
 import { state } from '../core/state.js';
+import { CARTO_BASEMAPS_KEY } from '../core/themes.js';
 
 export function generateMapLibreStyle(theme) {
 	const style = {
 		version: 8,
 		names: theme.name,
 		sources: {
-			openfreemap: {
+			carto: {
 				type: 'vector',
-				url: 'https://tiles.openfreemap.org/planet'
+				tiles: [`https://tiles.basemaps.cartocdn.com/v/20261001-03/vectortiles/carto.streets/v2/{z}/{x}/{y}.mvt?key=${CARTO_BASEMAPS_KEY}`],
+				minzoom: 0,
+				maxzoom: 15,
+				attribution: '© OpenStreetMap contributors © CARTO'
 			},
 			'route-source': {
 				type: 'geojson',
@@ -42,64 +46,65 @@ export function generateMapLibreStyle(theme) {
 			},
 			{
 				id: 'water',
-				source: 'openfreemap',
+				source: 'carto',
 				'source-layer': 'water',
 				type: 'fill',
 				paint: { 'fill-color': theme.water }
 			},
 			{
 				id: 'park',
-				source: 'openfreemap',
-				'source-layer': 'park',
+				source: 'carto',
+				'source-layer': 'landuse',
 				type: 'fill',
+				filter: ['in', ['get', 'kind'], ['literal', ['park', 'wood', 'grass', 'cemetery', 'pitch', 'garden', 'meadow', 'forest', 'nature_reserve', 'recreation_ground', 'village_green', 'common', 'scrub', 'heath']]],
 				paint: { 'fill-color': theme.parks }
 			},
 			{
 				id: 'road-default',
-				source: 'openfreemap',
-				'source-layer': 'transportation',
+				source: 'carto',
+				'source-layer': 'roads',
 				type: 'line',
-				filter: ['!', ['match', ['get', 'class'], ['motorway', 'primary', 'secondary', 'tertiary', 'residential'], true, false]],
+				filter: ['!', ['match', ['get', 'kind_detail'], ['motorway', 'trunk', 'primary', 'secondary', 'tertiary', 'residential', 'unclassified', 'living_street'], true, false]],
 				paint: { 'line-color': theme.road_default, 'line-width': 0.5 }
 			},
 			{
 				id: 'road-residential',
-				source: 'openfreemap',
-				'source-layer': 'transportation',
+				source: 'carto',
+				'source-layer': 'roads',
 				type: 'line',
-				filter: ['==', ['get', 'class'], 'residential'],
+				filter: ['in', ['get', 'kind_detail'], ['literal', ['residential', 'unclassified', 'living_street']]],
 				paint: { 'line-color': theme.road_residential, 'line-width': 0.5 }
 			},
 			{
 				id: 'road-tertiary',
-				source: 'openfreemap',
-				'source-layer': 'transportation',
+				source: 'carto',
+				'source-layer': 'roads',
 				type: 'line',
-				filter: ['==', ['get', 'class'], 'tertiary'],
+				filter: ['==', ['get', 'kind_detail'], 'tertiary'],
 				paint: { 'line-color': theme.road_tertiary, 'line-width': 0.8 }
 			},
 			{
 				id: 'road-secondary',
-				source: 'openfreemap',
-				'source-layer': 'transportation',
+				source: 'carto',
+				'source-layer': 'roads',
 				type: 'line',
-				filter: ['==', ['get', 'class'], 'secondary'],
+				filter: ['==', ['get', 'kind_detail'], 'secondary'],
 				paint: { 'line-color': theme.road_secondary, 'line-width': 1.0 }
 			},
 			{
 				id: 'road-primary',
-				source: 'openfreemap',
-				'source-layer': 'transportation',
+				source: 'carto',
+				'source-layer': 'roads',
 				type: 'line',
-				filter: ['==', ['get', 'class'], 'primary'],
+				filter: ['in', ['get', 'kind_detail'], ['literal', ['trunk', 'primary']]],
 				paint: { 'line-color': theme.road_primary, 'line-width': 1.5 }
 			},
 			{
 				id: 'road-motorway',
-				source: 'openfreemap',
-				'source-layer': 'transportation',
+				source: 'carto',
+				'source-layer': 'roads',
 				type: 'line',
-				filter: ['==', ['get', 'class'], 'motorway'],
+				filter: ['==', ['get', 'kind_detail'], 'motorway'],
 				paint: { 'line-color': theme.road_motorway, 'line-width': 2.0 }
 			},
 			{

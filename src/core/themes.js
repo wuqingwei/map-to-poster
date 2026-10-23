@@ -1,3 +1,7 @@
+// CARTO Basemaps key (public client key — it travels in tile URLs by design).
+// Used by the raster themes below and by the artistic mode vector source.
+export const CARTO_BASEMAPS_KEY = 'cb1_4skq_1_00c3e1c47e44f180464a432f';
+
 export const themes = {
 	standard: {
 		name: "Classic Street",
