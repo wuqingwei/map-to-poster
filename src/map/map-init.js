@@ -1,5 +1,13 @@
 import L from 'leaflet';
 import maplibregl from 'maplibre-gl';
+import maplibreWorkerUrl from 'maplibre-gl/dist/maplibre-gl-csp-worker.js?url';
+
+// The bundled MapLibre build defaults its worker URL to a blob: URL (its own
+// bootstrap calls setWorkerUrl(URL.createObjectURL(...))). Extension pages
+// run under CSP script-src 'self', which blocks blob: workers — the artistic
+// map then paints only its background layer (no roads, no GPS track).
+// Override with the shipped CSP worker file before any Map is created.
+maplibregl.setWorkerUrl(maplibreWorkerUrl);
 import { state, updateState } from '../core/state.js';
 import { markerIcons } from '../core/marker-icons.js';
 import { findBestInsertIndex } from '../core/utils.js';
