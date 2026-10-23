@@ -12,8 +12,8 @@ export const themes = {
 	},
 	dark: {
 		name: "Midnight Dark",
-		tileUrl: "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
-		tileUrlNoLabels: "https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png",
+		tileUrl: "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png?key=cb1_4skq_1_00c3e1c47e44f180464a432f",
+		tileUrlNoLabels: "https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png?key=cb1_4skq_1_00c3e1c47e44f180464a432f",
 		background: "#111111",
 		textColor: "#ffffff",
 		accent: "#818cf8",
@@ -23,8 +23,8 @@ export const themes = {
 	},
 	minimal: {
 		name: "Minimal White",
-		tileUrl: "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
-		tileUrlNoLabels: "https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png",
+		tileUrl: "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png?key=cb1_4skq_1_00c3e1c47e44f180464a432f",
+		tileUrlNoLabels: "https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png?key=cb1_4skq_1_00c3e1c47e44f180464a432f",
 		background: "#ffffff",
 		textColor: "#000000",
 		accent: "#6366f1",
@@ -34,8 +34,8 @@ export const themes = {
 	},
 	voyager: {
 		name: "Modern Voyager",
-		tileUrl: "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",
-		tileUrlNoLabels: "https://{s}.basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}{r}.png",
+		tileUrl: "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png?key=cb1_4skq_1_00c3e1c47e44f180464a432f",
+		tileUrlNoLabels: "https://{s}.basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}{r}.png?key=cb1_4skq_1_00c3e1c47e44f180464a432f",
 		background: "#ffffff",
 		textColor: "#1e293b",
 		accent: "#6366f1",
