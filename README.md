@@ -17,12 +17,14 @@ MapToPoster JS is a professional-grade, client-side web application designed to 
 - **Precision Geocoding**: Instant global location search powered by the Nominatim API.
 - **Dynamic Markers**: Place, drag, and style multiple location indicators with various icons and adjustable sizes.
 - **Custom Travel Paths**: Visualize journeys or specific itineraries with integrated route plotting and dynamic path fetching.
+- **GPX Track Import**: Drop in a recorded `.gpx` activity (ride, run, hike) and render it on the poster with adjustable color and width, in both standard and artistic modes.
 - **Mat / Passepartout Framing**: Apply a classic gallery-style framing effect with customizable width, border thickness, and opacity.
 - **Elegant Typography**: A curated selection of premium fonts with full support for custom text and coordinate overrides.
 - **Draggable UI Overlay**: A fluid city-label overlay with automatic edge-clamping and symmetric safety padding.
 - **Background Edge Effects**: Improve readability using soft vignette shading or subtle transparency along the edges.
 - **Layout Flexibility**: Independently toggle country names, geographic coordinates, and map labels for a tailored look.
 - **Pro-Grade Exports**: Generate high-fidelity PNG files at custom resolutions or ultra-high resolutions (up to 50,000px).
+- **Strava Chrome Extension**: A companion extension that turns any Strava activity into a poster in one click, straight from the activity page.
 - **Privacy & Performance**: Persistent settings via LocalStorage and 100% client-side rendering, your data never leaves your browser.
 
 ## 🎨 Themes
@@ -67,6 +69,45 @@ your_theme_key: {
 }
 ```
 The application will automatically pick up the new theme and display it in the selection menu.
+
+## 🏃 GPX Track Import
+
+Besides searching for places, you can put a recorded activity directly on the poster. In **2. Marker & Route → GPX Track**:
+
+1. Click **Import GPX** and choose a `.gpx` file (for example one exported from Strava, Garmin, or Komoot).
+2. The track is parsed per `<trkseg>` (with `<rtept>` / `<wpt>` fallback), thinned to at most 3,000 points, and its distance is measured automatically.
+3. Style it with the **track color** and **line width** controls, use **Fit Map to Track** to frame it, or **Remove** to clear it.
+
+The track renders in both rendering modes — as a Leaflet polyline in standard mode and as a MapLibre line layer in artistic mode — and is drawn into exported PNG posters. The imported track is persisted in `localStorage`, so it survives page reloads.
+
+## 🧩 Strava Chrome Extension
+
+The `extension/` folder contains a Chrome extension that generates a poster from a Strava activity without downloading or uploading any files manually:
+
+![Strava extension poster page](public/strava-extension.webp)
+
+**How it works**
+
+- On any Strava activity page, a **"🗺 生成活动海报"** button docks inside the activity map at the bottom-right, lined up next to Strava's own flyover control.
+- Clicking it fetches the activity's GPX through Strava's own *Export GPX* endpoint (using your signed-in session) and reads the activity's official **distance, elevation gain, and moving time** from the page's stats block. If the stats block is unavailable, those values fall back to GPX-derived measurements (haversine distance, 3 m-hysteresis elevation gain, elapsed time).
+- A dedicated poster page then opens with the track pre-loaded and the subtitle pre-filled, e.g. `距离：105.3 KM 海拔上升：568 M 活动时间：3:43:54`. The subtitle stays freely editable.
+
+**Poster page features**
+
+- Standard (Leaflet) and artistic (MapLibre GL) modes with the full theme catalog, including the **custom artistic theme editor** (create / edit / delete / import / export themes as JSON).
+- Track color and line width controls, one-click **Fit** to the track.
+- Title text with **13 font choices** and independent **title / subtitle font-size sliders** (with reset-to-auto); the preview and the exported PNG always match.
+- Output size presets plus custom dimensions, and one-click **Export PNG**.
+
+Everything runs client-side: the GPX is parsed in the browser and handed to the poster page through `chrome.storage.local`. Nothing is uploaded to any server.
+
+**Build & install**
+
+```bash
+npm run build:ext
+```
+
+This builds the poster page into `extension/dist/` and packs `extension/strava-poster-extension.zip`. To install, unzip (or use the folder directly), open `chrome://extensions`, enable **Developer mode**, choose **Load unpacked**, and select the `extension/dist` folder.
 
 ## 🛠️ Tech Stack
 
@@ -157,6 +198,7 @@ docker run -d -p 8080:80 --name map-to-poster map-to-poster
 4. **Dynamic Asset Integration**: Manages custom GeoJSON routing and multi-marker instances with interactive drag-and-drop support across both map engines.
 5. **Mat Framing Layer**: Implements a virtual "Mat/Passepartout" interface with customizable inset spacing and inner borders for a gallery-style finish.
 6. **High-Fidelity Rendering Pipeline**: Captured exports utilize a multi-stage process in [src/core/export.js](src/core/export.js) to generate high-resolution map snapshots using `html2canvas` and the `onclone` callback.
+7. **Shared Core for Web & Extension**: The Chrome extension's poster page ([src/ext/poster-page.js](src/ext/poster-page.js)) is a second Vite entry point that reuses the same state, map, GPX, and export modules as the web app, so fixes and themes apply to both. The artistic vector basemap uses CARTO Basemaps vector tiles (`carto.streets`, Protomaps schema) styled per theme.
 
 ## 🤝 Credits
 
