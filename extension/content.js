@@ -83,9 +83,84 @@
 			for (let i = 1; i < seg.length; i++) distanceKm += haversineKm(seg[i - 1], seg[i]);
 		}
 
+		// Elevation gain (3 m hysteresis, mirrors src/core/gpx.js) + elapsed span.
+		let elevGainM = 0;
+		let eleBase = null;
+		let tMin = Infinity, tMax = -Infinity;
+		for (const el of doc.querySelectorAll('trkpt')) {
+			const eleEl = el.querySelector('ele');
+			const ele = eleEl ? parseFloat(eleEl.textContent) : NaN;
+			if (Number.isFinite(ele)) {
+				if (eleBase === null) eleBase = ele;
+				else if (ele - eleBase >= 3) { elevGainM += ele - eleBase; eleBase = ele; }
+				else if (ele < eleBase) eleBase = ele;
+			}
+			const timeEl = el.querySelector('time');
+			if (timeEl) {
+				const t = Date.parse(timeEl.textContent.trim());
+				if (Number.isFinite(t)) { if (t < tMin) tMin = t; if (t > tMax) tMax = t; }
+			}
+		}
+		const durationSec = tMax > tMin ? Math.round((tMax - tMin) / 1000) : 0;
+
 		const nameEl = doc.querySelector('metadata > name') || doc.querySelector('trk > name');
 		const name = nameEl ? nameEl.textContent.trim() : '';
-		return { name, segments, distanceKm };
+		return { name, segments, distanceKm, elevGainM: Math.round(elevGainM), durationSec };
+	}
+
+	// ---------- Stats shown on the activity page (Strava's own numbers) ----------
+	// The stats list pairs a value node (number + unit <abbr>) with a following
+	// label node ("Distance" / "Moving Time" / "Elevation"). Strava's values win
+	// over GPX-derived ones: its elevation is recomputed and its time is moving
+	// time, not the elapsed span.
+
+	function statTextByLabel(labels) {
+		const nodes = document.querySelectorAll('div, span, td, dt, dd, li');
+		for (const el of nodes) {
+			const txt = (el.textContent || '').trim();
+			if (!labels.includes(txt)) continue;
+			const prev = el.previousElementSibling;
+			if (prev && /\d/.test(prev.textContent || '')) return prev.textContent.trim();
+			const strong = el.parentElement && el.parentElement.querySelector('strong');
+			if (strong && /\d/.test(strong.textContent || '')) return strong.textContent.trim();
+		}
+		return '';
+	}
+
+	function statNumber(text) {
+		const m = (text || '').replace(/,/g, '').match(/[\d.]+/);
+		return m ? parseFloat(m[0]) : NaN;
+	}
+
+	function scrapeStats() {
+		const out = {};
+		const distText = statTextByLabel(['Distance', '距离']);
+		if (distText) {
+			let v = statNumber(distText);
+			if (Number.isFinite(v)) {
+				if (/miles|mi\b/i.test(distText)) v *= 1.60934;
+				out.distanceKm = v;
+			}
+		}
+		const elevText = statTextByLabel(['Elevation', 'Elev Gain', '海拔', '爬升', '累计爬升']);
+		if (elevText) {
+			let v = statNumber(elevText);
+			if (Number.isFinite(v)) {
+				if (/feet|ft\b/i.test(elevText)) v *= 0.3048;
+				out.elevGainM = Math.round(v);
+			}
+		}
+		const timeText = statTextByLabel(['Moving Time', '移动时间']) || statTextByLabel(['Time']);
+		if (timeText && /[\d:]/.test(timeText)) out.durationText = timeText.replace(/\s+/g, '');
+		return out;
+	}
+
+	function formatDuration(sec) {
+		if (!sec || sec <= 0) return '';
+		const h = Math.floor(sec / 3600);
+		const m = Math.floor((sec % 3600) / 60);
+		const s = sec % 60;
+		return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 	}
 
 	// ---------- Activity metadata from the page ----------
@@ -130,13 +205,17 @@
 			const text = await res.text();
 			if (!text.includes('<gpx')) throw new Error('没有拿到 GPX（可能未登录）');
 			const parsed = parseGpx(text);
+			const stats = scrapeStats();
 			const payload = {
 				activityId: id,
 				title: scrapeTitle() || parsed.name || 'Strava Activity',
 				date: scrapeDate(),
 				name: parsed.name,
 				segments: parsed.segments,
-				distanceKm: parsed.distanceKm,
+				distanceKm: Number.isFinite(stats.distanceKm) ? stats.distanceKm : parsed.distanceKm,
+				elevGainM: Number.isFinite(stats.elevGainM) ? stats.elevGainM : parsed.elevGainM,
+				durationText: stats.durationText || formatDuration(parsed.durationSec),
+				durationSec: parsed.durationSec,
 				ts: Date.now()
 			};
 			await chrome.storage.local.set({ pendingPoster: payload });

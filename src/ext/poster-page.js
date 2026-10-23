@@ -31,6 +31,25 @@ const $ = (id) => document.getElementById(id);
 $('ext-theme-select').innerHTML = Object.entries(themes)
 	.map(([key, t]) => `<option value="${key}">${t.name || key}</option>`).join('');
 
+// Same title font list as the web app's city-font-select.
+const FONT_OPTIONS = [
+	["'Bebas Neue', sans-serif", 'Bebas Neue'],
+	["'Caveat', cursive", 'Caveat'],
+	["'Cormorant Garamond', serif", 'Cormorant Garamond'],
+	["'Dancing Script', cursive", 'Dancing Script'],
+	["'Inter', sans-serif", 'Inter'],
+	["'Lora', serif", 'Lora'],
+	["'Merriweather', serif", 'Merriweather'],
+	["'Montserrat', sans-serif", 'Montserrat'],
+	["'Outfit', sans-serif", 'Outfit'],
+	["'Playfair Display', serif", 'Playfair Display'],
+	["'Raleway', sans-serif", 'Raleway'],
+	['sans-serif', 'Generic Sans-Serif'],
+	['serif', 'Generic Serif']
+];
+$('ext-font-select').innerHTML = FONT_OPTIONS
+	.map(([value, label]) => `<option value="${value}">${label}</option>`).join('');
+
 function refreshArtisticOptions() {
 	const custom = loadCustomThemes();
 	const customKeys = Object.keys(custom);
@@ -70,6 +89,7 @@ $('ext-artistic-select').addEventListener('change', (e) => updateState({ artisti
 $('ext-labels-toggle').addEventListener('change', (e) => updateState({ showLabels: e.target.checked }));
 $('ext-coords-toggle').addEventListener('change', (e) => updateState({ showCoords: e.target.checked }));
 $('ext-title-input').addEventListener('input', (e) => updateState({ cityOverride: e.target.value }));
+$('ext-font-select').addEventListener('change', (e) => updateState({ cityFont: e.target.value }));
 $('ext-subtitle-input').addEventListener('input', (e) => updateState({ countryOverride: e.target.value }));
 
 const colorEl = $('ext-color');
@@ -250,10 +270,28 @@ function seedTrack({ title, subtitle, segments, distanceKm }) {
 	requestAnimationFrame(() => setTimeout(() => { invalidateMapSize(); fitGpxToMap(); }, 350));
 }
 
-function subtitleFor(distanceKm, date) {
+function formatDuration(sec) {
+	if (!sec || sec <= 0) return '';
+	const h = Math.floor(sec / 3600);
+	const m = Math.floor((sec % 3600) / 60);
+	const s = sec % 60;
+	return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+}
+
+function subtitleFor(distanceKm, date, elevGainM, durationText) {
 	const parts = [`${(distanceKm || 0).toFixed(1)} KM`];
+	if (elevGainM > 0) parts.push(`↑ ${Math.round(elevGainM)} M`);
+	if (durationText) parts.push(durationText);
 	if (date) parts.push(date);
 	return parts.join(' · ');
+}
+
+function statsLine(distanceKm, pointCount, date, elevGainM, durationText) {
+	let line = `${(distanceKm || 0).toFixed(1)} km · ${pointCount.toLocaleString()} 个轨迹点`;
+	if (elevGainM > 0) line += ` · 爬升 ${Math.round(elevGainM)} m`;
+	if (durationText) line += ` · 用时 ${durationText}`;
+	if (date) line += ` · ${date}`;
+	return line;
 }
 
 async function loadPendingPoster() {
@@ -263,13 +301,13 @@ async function loadPendingPoster() {
 		if (pendingPoster && pendingPoster.segments && pendingPoster.segments.length > 0) {
 			$('ext-activity-name').textContent = pendingPoster.title || 'Strava Activity';
 			const pointCount = pendingPoster.segments.reduce((n, s) => n + s.length, 0);
+			const durationText = pendingPoster.durationText || formatDuration(pendingPoster.durationSec);
 			$('ext-activity-stats').textContent =
-				`${(pendingPoster.distanceKm || 0).toFixed(1)} km · ${pointCount.toLocaleString()} 个轨迹点` +
-				(pendingPoster.date ? ` · ${pendingPoster.date}` : '');
+				statsLine(pendingPoster.distanceKm, pointCount, pendingPoster.date, pendingPoster.elevGainM, durationText);
 			$('ext-nodata').classList.add('hidden');
 			seedTrack({
 				title: pendingPoster.title,
-				subtitle: subtitleFor(pendingPoster.distanceKm, pendingPoster.date),
+				subtitle: subtitleFor(pendingPoster.distanceKm, pendingPoster.date, pendingPoster.elevGainM, durationText),
 				segments: pendingPoster.segments,
 				distanceKm: pendingPoster.distanceKm
 			});
@@ -288,12 +326,13 @@ $('ext-file-input').addEventListener('change', async (e) => {
 	if (!file) return;
 	try {
 		const parsed = parseGpx(await file.text(), file.name);
+		const durationText = formatDuration(parsed.durationSec);
 		$('ext-activity-name').textContent = parsed.name;
-		$('ext-activity-stats').textContent = `${parsed.distanceKm.toFixed(1)} km · ${parsed.pointCount.toLocaleString()} 个轨迹点`;
+		$('ext-activity-stats').textContent = statsLine(parsed.distanceKm, parsed.pointCount, '', parsed.elevGainM, durationText);
 		$('ext-nodata').classList.add('hidden');
 		seedTrack({
 			title: parsed.name,
-			subtitle: subtitleFor(parsed.distanceKm, ''),
+			subtitle: subtitleFor(parsed.distanceKm, '', parsed.elevGainM, durationText),
 			segments: parsed.segments,
 			distanceKm: parsed.distanceKm
 		});
@@ -336,6 +375,7 @@ function syncUI(s) {
 	}
 	$('ext-theme-select').value = s.theme;
 	$('ext-artistic-select').value = s.artisticTheme;
+	$('ext-font-select').value = s.cityFont;
 	$('ext-labels-toggle').checked = !!s.showLabels;
 	$('ext-coords-toggle').checked = !!s.showCoords;
 	if (document.activeElement !== $('ext-title-input')) $('ext-title-input').value = s.cityOverride || '';

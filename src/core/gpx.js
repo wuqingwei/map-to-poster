@@ -90,6 +90,27 @@ export function parseGpx(text, fileName = '') {
 		}
 	}
 
+	// Elevation gain + elapsed time from the raw trackpoints. Gain uses a 3 m
+	// hysteresis so barometric/GPS jitter does not inflate the total.
+	let elevGainM = 0;
+	let eleBase = null;
+	let tMin = Infinity, tMax = -Infinity;
+	for (const el of doc.querySelectorAll('trkpt')) {
+		const eleEl = el.querySelector('ele');
+		const ele = eleEl ? parseFloat(eleEl.textContent) : NaN;
+		if (Number.isFinite(ele)) {
+			if (eleBase === null) eleBase = ele;
+			else if (ele - eleBase >= 3) { elevGainM += ele - eleBase; eleBase = ele; }
+			else if (ele < eleBase) eleBase = ele;
+		}
+		const timeEl = el.querySelector('time');
+		if (timeEl) {
+			const t = Date.parse(timeEl.textContent.trim());
+			if (Number.isFinite(t)) { if (t < tMin) tMin = t; if (t > tMax) tMax = t; }
+		}
+	}
+	const durationSec = tMax > tMin ? Math.round((tMax - tMin) / 1000) : 0;
+
 	const nameEl = doc.querySelector('metadata > name') || doc.querySelector('trk > name');
 	const name = (nameEl && nameEl.textContent.trim()) || fileName.replace(/\.gpx$/i, '') || 'GPX Track';
 
@@ -98,6 +119,8 @@ export function parseGpx(text, fileName = '') {
 		segments,
 		pointCount,
 		distanceKm,
+		elevGainM: Math.round(elevGainM),
+		durationSec,
 		bounds: { minLat, maxLat, minLon, maxLon }
 	};
 }
