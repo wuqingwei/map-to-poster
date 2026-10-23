@@ -1410,6 +1410,13 @@ function applyPosterTextLayout(elements, currentState) {
 		elements.country.style.lineHeight = '1.2';
 		elements.country.style.margin = '0px';
 	}
+	// Explicit font sizes (extension poster page) override the preset sizes.
+	if (elements.city && currentState.cityFontSize > 0) {
+		elements.city.style.fontSize = `${currentState.cityFontSize}px`;
+	}
+	if (elements.country && currentState.countryFontSize > 0) {
+		elements.country.style.fontSize = `${currentState.countryFontSize}px`;
+	}
 	if (elements.coords) {
 		elements.coords.style.fontSize = `${sizeConfig.coords}px`;
 		elements.coords.style.lineHeight = '1.2';

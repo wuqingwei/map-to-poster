@@ -123,8 +123,23 @@
 				<select id="ext-font-select" class="input-field appearance-none cursor-pointer mt-1"></select>
 			</div>
 			<div>
+				<div class="flex items-center justify-between">
+					<span class="label-sm mb-0">标题字号</span>
+					<span id="ext-city-size-value" class="text-[9px] font-bold text-accent"></span>
+				</div>
+				<input type="range" id="ext-city-size" min="28" max="200" step="2" class="w-full h-1 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-accent mt-2" />
+			</div>
+			<div>
+				<div class="flex items-center justify-between">
+					<span class="label-sm mb-0">副标题字号</span>
+					<span id="ext-country-size-value" class="text-[9px] font-bold text-accent"></span>
+				</div>
+				<input type="range" id="ext-country-size" min="10" max="80" step="1" class="w-full h-1 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-accent mt-2" />
+			</div>
+			<button id="ext-size-auto" class="text-[10px] font-bold text-slate-400 hover:text-blue-600 transition-colors">字号恢复自动</button>
+			<div>
 				<span class="label-sm">副标题</span>
-				<input type="text" id="ext-subtitle-input" class="input-field mt-1" placeholder="如 105.1 KM · 2026-10-15" />
+				<input type="text" id="ext-subtitle-input" class="input-field mt-1" placeholder="如 距离：105.1 KM 海拔上升：568 M 活动时间：3:43:54" />
 			</div>
 			<div class="flex items-center justify-between">
 				<span class="label-sm mb-0">显示坐标</span>

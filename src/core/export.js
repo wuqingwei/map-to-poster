@@ -85,6 +85,14 @@ function applyPosterTextLayout(elements, width, height, matWidth = 0, size = 'me
 		elements.country.style.margin = '0px';
 		elements.country.style.paddingTop = `${overlayGap}px`;
 	}
+	// Explicit font sizes (extension poster page) override the preset sizes,
+	// mirroring the preview-side override in form.js applyPosterTextLayout.
+	if (elements.city && state.cityFontSize > 0) {
+		elements.city.style.fontSize = `${state.cityFontSize}px`;
+	}
+	if (elements.country && state.countryFontSize > 0) {
+		elements.country.style.fontSize = `${state.countryFontSize}px`;
+	}
 	if (elements.coords) {
 		elements.coords.style.fontSize = `${sizeConfig.coords}px`;
 		elements.coords.style.lineHeight = '1.2';

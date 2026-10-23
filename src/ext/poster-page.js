@@ -90,6 +90,9 @@ $('ext-labels-toggle').addEventListener('change', (e) => updateState({ showLabel
 $('ext-coords-toggle').addEventListener('change', (e) => updateState({ showCoords: e.target.checked }));
 $('ext-title-input').addEventListener('input', (e) => updateState({ cityOverride: e.target.value }));
 $('ext-font-select').addEventListener('change', (e) => updateState({ cityFont: e.target.value }));
+$('ext-city-size').addEventListener('input', (e) => updateState({ cityFontSize: parseInt(e.target.value) || 0 }));
+$('ext-country-size').addEventListener('input', (e) => updateState({ countryFontSize: parseInt(e.target.value) || 0 }));
+$('ext-size-auto').addEventListener('click', () => updateState({ cityFontSize: 0, countryFontSize: 0 }));
 $('ext-subtitle-input').addEventListener('input', (e) => updateState({ countryOverride: e.target.value }));
 
 const colorEl = $('ext-color');
@@ -279,11 +282,10 @@ function formatDuration(sec) {
 }
 
 function subtitleFor(distanceKm, date, elevGainM, durationText) {
-	const parts = [`${(distanceKm || 0).toFixed(1)} KM`];
-	if (elevGainM > 0) parts.push(`↑ ${Math.round(elevGainM)} M`);
-	if (durationText) parts.push(durationText);
-	if (date) parts.push(date);
-	return parts.join(' · ');
+	const parts = [`距离：${(distanceKm || 0).toFixed(1)} KM`];
+	if (elevGainM > 0) parts.push(`海拔上升：${Math.round(elevGainM)} M`);
+	if (durationText) parts.push(`活动时间：${durationText}`);
+	return parts.join(' ');
 }
 
 function statsLine(distanceKm, pointCount, date, elevGainM, durationText) {
@@ -376,6 +378,21 @@ function syncUI(s) {
 	$('ext-theme-select').value = s.theme;
 	$('ext-artistic-select').value = s.artisticTheme;
 	$('ext-font-select').value = s.cityFont;
+	// Font size sliders mirror the effective size: the explicit value when one
+	// is set, otherwise whatever the preset layout computed (read back from the
+	// rendered title/subtitle, which updatePreviewStyles has just styled).
+	const cityEl = $('display-city');
+	if (cityEl) {
+		const v = Math.round(parseFloat(getComputedStyle(cityEl).fontSize)) || 0;
+		if (v && document.activeElement !== $('ext-city-size')) $('ext-city-size').value = v;
+		$('ext-city-size-value').textContent = v ? `${v}px${s.cityFontSize > 0 ? '' : '（自动）'}` : '';
+	}
+	const countryEl = $('display-country');
+	if (countryEl) {
+		const v = Math.round(parseFloat(getComputedStyle(countryEl).fontSize)) || 0;
+		if (v && document.activeElement !== $('ext-country-size')) $('ext-country-size').value = v;
+		$('ext-country-size-value').textContent = v ? `${v}px${s.countryFontSize > 0 ? '' : '（自动）'}` : '';
+	}
 	$('ext-labels-toggle').checked = !!s.showLabels;
 	$('ext-coords-toggle').checked = !!s.showCoords;
 	if (document.activeElement !== $('ext-title-input')) $('ext-title-input').value = s.cityOverride || '';
