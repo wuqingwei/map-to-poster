@@ -228,25 +228,71 @@
 		}
 	}
 
+	const BTN_BASE_STYLE = [
+		'background:#FC4C02', 'color:#fff', 'border:none', 'cursor:pointer',
+		'border-radius:999px', 'white-space:nowrap',
+		'font:600 13px/1 -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+		'box-shadow:0 4px 14px rgba(252,76,2,0.35)'
+	].join(';');
+
+	// The poster button belongs inside the activity map, bottom-right, lined up
+	// with Strava's own controls: it sits immediately left of the orange
+	// "Start flyover" button, bottoms aligned, never covering it. If the map
+	// (or that button) is not on the page, fall back to a viewport-fixed pill.
+	function findMapContainer() {
+		const gl = document.querySelector('.maplibregl-map, .mapboxgl-map');
+		if (gl && gl.querySelector('canvas') && gl.offsetWidth > 300) return gl;
+		const fly = document.querySelector('button[aria-label="Start flyover"], button[aria-label*="flyover" i]');
+		let node = fly ? fly.parentElement : null;
+		while (node && node !== document.body) {
+			if (node.querySelector('canvas') && node.offsetWidth > 300 && node.offsetHeight > 150) return node;
+			node = node.parentElement;
+		}
+		return null;
+	}
+
+	let lastPlacement = '';
+	function placeButton(btn) {
+		const container = findMapContainer();
+		const fly = container && container.querySelector('button[aria-label="Start flyover"], button[aria-label*="flyover" i]');
+		let placement;
+		if (container && fly) {
+			if (btn.parentElement !== container) container.appendChild(btn);
+			const cr = container.getBoundingClientRect();
+			const fr = fly.getBoundingClientRect();
+			const right = Math.max(8, Math.round(cr.right - fr.left + 8));
+			const bottom = Math.max(0, Math.round(cr.bottom - fr.bottom));
+			placement = `position:absolute;right:${right}px;bottom:${bottom}px;z-index:10;padding:11px 16px;`;
+		} else if (container) {
+			if (btn.parentElement !== container) container.appendChild(btn);
+			placement = 'position:absolute;right:10px;bottom:10px;z-index:10;padding:11px 16px;';
+		} else {
+			if (btn.parentElement !== document.body) document.body.appendChild(btn);
+			placement = 'position:fixed;right:24px;bottom:24px;z-index:9999;padding:12px 20px;';
+		}
+		if (placement !== lastPlacement) {
+			lastPlacement = placement;
+			btn.style.cssText = BTN_BASE_STYLE + ';' + placement;
+		}
+	}
+
 	function ensureButton() {
 		if (!activityIdFromUrl()) return;
-		if (document.getElementById(BTN_ID)) return;
-		const btn = document.createElement('button');
-		btn.id = BTN_ID;
-		btn.type = 'button';
-		btn.textContent = '🗺 生成活动海报';
-		btn.style.cssText = [
-			'position:fixed', 'right:24px', 'bottom:24px', 'z-index:9999',
-			'background:#FC4C02', 'color:#fff', 'border:none', 'cursor:pointer',
-			'padding:12px 20px', 'border-radius:999px',
-			'font:600 14px/1 -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
-			'box-shadow:0 8px 24px rgba(252,76,2,0.4)'
-		].join(';');
-		btn.addEventListener('click', () => onClick(btn));
-		document.body.appendChild(btn);
+		let btn = document.getElementById(BTN_ID);
+		if (!btn) {
+			btn = document.createElement('button');
+			btn.id = BTN_ID;
+			btn.type = 'button';
+			btn.textContent = '🗺 生成活动海报';
+			btn.addEventListener('click', () => onClick(btn));
+			document.body.appendChild(btn);
+			lastPlacement = '';
+		}
+		placeButton(btn);
 	}
 
 	ensureButton();
-	// Strava is an SPA: keep the button present across in-app navigations.
+	// Strava is an SPA: keep the button present (and correctly placed) across
+	// in-app navigations and map re-renders.
 	setInterval(ensureButton, 1500);
 })();
