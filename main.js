@@ -3,6 +3,7 @@ import './style.css';
 import { subscribe, state, getSelectedTheme } from './src/core/state.js';
 import { initMap, updateMapTheme, invalidateMapSize, waitForTilesLoad, waitForArtisticIdle, updateMarkerStyles, updateRouteStyles } from './src/map/map-init.js';
 import { setupControls, updatePreviewStyles } from './src/ui/form.js';
+import { updateGpxStyles } from './src/map/gpx-manager.js';
 import { exportToPNG } from './src/core/export.js';
 
 const initialTheme = getSelectedTheme();
@@ -33,6 +34,7 @@ subscribe((currentState) => {
 
 	updateMarkerStyles(currentState);
 	updateRouteStyles(currentState);
+	updateGpxStyles(currentState);
 
 	syncUI(currentState);
 	ensurePreviewReady();

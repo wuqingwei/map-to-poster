@@ -14,6 +14,8 @@ import {
 	updateRouteGeometry
 } from '../map/map-init.js';
 import { searchLocation, formatCoords } from '../map/geocoder.js';
+import { parseGpx } from '../core/gpx.js';
+import { updateGpxStyles, fitGpxToMap } from '../map/gpx-manager.js';
 
 
 export function setupControls() {
@@ -849,6 +851,94 @@ export function setupControls() {
 		});
 	}
 
+	const gpxToggle = document.getElementById('show-gpx-toggle');
+	const gpxSettings = document.getElementById('gpx-settings');
+	if (gpxToggle) {
+		gpxToggle.addEventListener('change', (e) => {
+			const show = e.target.checked;
+			updateState({ showGpx: show });
+			if (gpxSettings) gpxSettings.classList.toggle('hidden', !show);
+			updateGpxStyles(state);
+		});
+	}
+
+	const gpxFileInput = document.getElementById('gpx-file-input');
+	const importGpxBtn = document.getElementById('import-gpx-btn');
+	const gpxError = document.getElementById('gpx-error');
+	if (importGpxBtn && gpxFileInput) {
+		importGpxBtn.addEventListener('click', () => gpxFileInput.click());
+		gpxFileInput.addEventListener('change', async () => {
+			const file = gpxFileInput.files && gpxFileInput.files[0];
+			gpxFileInput.value = '';
+			if (!file) return;
+			try {
+				const parsed = parseGpx(await file.text(), file.name);
+				if (gpxError) gpxError.classList.add('hidden');
+				updateState({
+					showGpx: true,
+					gpxName: parsed.name,
+					gpxSegments: parsed.segments,
+					gpxDistanceKm: parsed.distanceKm
+				});
+				if (gpxToggle) gpxToggle.checked = true;
+				if (gpxSettings) gpxSettings.classList.remove('hidden');
+				updateGpxStyles(state);
+				fitGpxToMap();
+			} catch (err) {
+				if (gpxError) {
+					gpxError.textContent = err.message || 'Could not read that GPX file.';
+					gpxError.classList.remove('hidden');
+				}
+			}
+		});
+	}
+
+	const clearGpxBtn = document.getElementById('clear-gpx-btn');
+	if (clearGpxBtn) {
+		clearGpxBtn.addEventListener('click', () => {
+			updateState({ showGpx: false, gpxName: '', gpxSegments: [], gpxDistanceKm: 0 });
+			if (gpxToggle) gpxToggle.checked = false;
+			if (gpxSettings) gpxSettings.classList.add('hidden');
+			updateGpxStyles(state);
+		});
+	}
+
+	const fitGpxBtn = document.getElementById('fit-gpx-btn');
+	if (fitGpxBtn) {
+		fitGpxBtn.addEventListener('click', () => fitGpxToMap());
+	}
+
+	const gpxColor = document.getElementById('gpx-color');
+	const gpxColorHex = document.getElementById('gpx-color-hex');
+	if (gpxColor) {
+		gpxColor.addEventListener('input', () => {
+			if (gpxColorHex) gpxColorHex.value = gpxColor.value;
+			updateState({ gpxColor: gpxColor.value });
+			updateGpxStyles(state);
+		});
+	}
+	if (gpxColorHex) {
+		gpxColorHex.addEventListener('input', () => {
+			const v = gpxColorHex.value.trim();
+			if (/^#[0-9a-fA-F]{6}$/.test(v)) {
+				if (gpxColor) gpxColor.value = v;
+				updateState({ gpxColor: v });
+				updateGpxStyles(state);
+			}
+		});
+	}
+
+	const gpxWidthSlider = document.getElementById('gpx-width-slider');
+	const gpxWidthValue = document.getElementById('gpx-width-value');
+	if (gpxWidthSlider) {
+		gpxWidthSlider.addEventListener('input', () => {
+			const w = parseInt(gpxWidthSlider.value) || 4;
+			if (gpxWidthValue) gpxWidthValue.textContent = `${w}px`;
+			updateState({ gpxWidth: w });
+			updateGpxStyles(state);
+		});
+	}
+
 	if (overlayBgButtons) {
 		overlayBgButtons.forEach(btn => {
 			btn.addEventListener('click', () => {
@@ -1110,6 +1200,35 @@ export function setupControls() {
 			const viaPoints = (currentState.routeViaPoints || []).length;
 			routeCountDisplay.textContent = 2 + viaPoints;
 		}
+
+		const gpxToggleEl = document.getElementById('show-gpx-toggle');
+		if (gpxToggleEl) {
+			gpxToggleEl.checked = !!currentState.showGpx;
+			const settings = document.getElementById('gpx-settings');
+			if (settings) settings.classList.toggle('hidden', !currentState.showGpx);
+		}
+		const gpxSegments = currentState.gpxSegments || [];
+		const gpxPointTotal = gpxSegments.reduce((n, s) => n + s.length, 0);
+		const gpxInfo = document.getElementById('gpx-info');
+		if (gpxInfo) gpxInfo.classList.toggle('hidden', gpxPointTotal === 0);
+		const gpxFileName = document.getElementById('gpx-file-name');
+		if (gpxFileName) gpxFileName.textContent = currentState.gpxName || 'GPX Track';
+		const gpxStats = document.getElementById('gpx-stats');
+		if (gpxStats) {
+			gpxStats.textContent = `${gpxPointTotal.toLocaleString()} points · ${(currentState.gpxDistanceKm || 0).toFixed(1)} km`;
+		}
+		const gpxColorEl = document.getElementById('gpx-color');
+		if (gpxColorEl && gpxColorEl.value !== currentState.gpxColor) {
+			gpxColorEl.value = currentState.gpxColor || '#EF4444';
+		}
+		const gpxColorHexEl = document.getElementById('gpx-color-hex');
+		if (gpxColorHexEl && document.activeElement !== gpxColorHexEl) {
+			gpxColorHexEl.value = currentState.gpxColor || '#EF4444';
+		}
+		const gpxWidthEl = document.getElementById('gpx-width-slider');
+		if (gpxWidthEl) gpxWidthEl.value = currentState.gpxWidth || 4;
+		const gpxWidthValEl = document.getElementById('gpx-width-value');
+		if (gpxWidthValEl) gpxWidthValEl.textContent = `${currentState.gpxWidth || 4}px`;
 
 		if (overlayBgButtons && overlayBgButtons.length) {
 			overlayBgButtons.forEach(b => {

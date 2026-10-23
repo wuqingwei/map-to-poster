@@ -19,6 +19,19 @@ export function generateMapLibreStyle(theme) {
 						coordinates: [[state.routeStartLon, state.routeStartLat], [state.routeEndLon, state.routeEndLat]]
 					}
 				}
+			},
+			'gpx-source': {
+				type: 'geojson',
+				data: {
+					type: 'Feature',
+					properties: {},
+					geometry: {
+						type: 'MultiLineString',
+						coordinates: (state.showGpx && state.gpxSegments)
+							? state.gpxSegments.filter(s => s.length > 1).map(seg => seg.map(([lat, lon]) => [lon, lat]))
+							: []
+					}
+				}
 			}
 		},
 		layers: [
@@ -88,6 +101,34 @@ export function generateMapLibreStyle(theme) {
 				type: 'line',
 				filter: ['==', ['get', 'class'], 'motorway'],
 				paint: { 'line-color': theme.road_motorway, 'line-width': 2.0 }
+			},
+			{
+				id: 'gpx-line-casing',
+				source: 'gpx-source',
+				type: 'line',
+				layout: {
+					'line-cap': 'round',
+					'line-join': 'round',
+					'visibility': state.showGpx ? 'visible' : 'none'
+				},
+				paint: {
+					'line-color': theme.bg || '#ffffff',
+					'line-width': Math.round((state.gpxWidth || 4) * 2.25)
+				}
+			},
+			{
+				id: 'gpx-line',
+				source: 'gpx-source',
+				type: 'line',
+				layout: {
+					'line-cap': 'round',
+					'line-join': 'round',
+					'visibility': state.showGpx ? 'visible' : 'none'
+				},
+				paint: {
+					'line-color': state.gpxColor || '#EF4444',
+					'line-width': state.gpxWidth || 4
+				}
 			},
 			{
 				id: 'route-line-casing',

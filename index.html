@@ -228,6 +228,64 @@
 						</div>
 						<p class="text-[9px] text-slate-400 italic text-center">Tip: Drag the markers on the map to set the route. Click on the line to add a custom bend. Double click a point to remove it.</p>
 					</div>
+
+					<div class="flex items-center justify-between">
+						<span class="label-sm mb-0">GPX Track</span>
+						<label class="relative inline-flex items-center cursor-pointer">
+							<input type="checkbox" id="show-gpx-toggle" class="sr-only peer">
+							<div class="toggle-pill"></div>
+						</label>
+					</div>
+
+					<div id="gpx-settings" class="space-y-4 hidden">
+						<input type="file" id="gpx-file-input" accept=".gpx,application/gpx+xml" class="hidden" />
+						<button id="import-gpx-btn" class="w-full py-2.5 px-3 rounded-xl bg-white border border-slate-200 shadow-sm text-[10px] font-bold text-slate-600 hover:border-blue-200 hover:bg-blue-50/30 hover:text-blue-600 transition-all flex items-center justify-center space-x-2">
+							<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 16V4m0 0l-4 4m4-4l4 4M4 16v3a1 1 0 001 1h14a1 1 0 001-1v-3" />
+							</svg>
+							<span>Import GPX File</span>
+						</button>
+						<p id="gpx-error" class="text-[9px] text-red-500 italic text-center hidden"></p>
+
+						<div id="gpx-info" class="bg-slate-50/50 rounded-2xl border border-slate-100 p-2 space-y-2 hidden">
+							<div class="flex items-center justify-between px-1.5 py-1">
+								<div class="flex items-center space-x-2 min-w-0">
+									<div class="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse shrink-0"></div>
+									<span id="gpx-file-name" class="text-[10px] text-slate-500 font-medium truncate">No file loaded</span>
+								</div>
+								<button id="clear-gpx-btn" class="text-[9px] font-bold text-slate-400 hover:text-red-500 transition-colors uppercase tracking-tight shrink-0">Remove</button>
+							</div>
+							<div class="px-1.5 pb-1">
+								<span id="gpx-stats" class="text-[10px] text-slate-500 font-medium uppercase tracking-wider">0 points · 0 km</span>
+							</div>
+						</div>
+
+						<div class="grid grid-cols-2 gap-3">
+							<div>
+								<span class="label-sm">Track Color</span>
+								<div class="flex items-center space-x-2 bg-white border border-slate-200 rounded-xl px-2 py-1.5 shadow-sm">
+									<input type="color" id="gpx-color" value="#EF4444" class="w-9 h-9 rounded-lg cursor-pointer shrink-0 border-0 p-0" />
+									<input type="text" id="gpx-color-hex" maxlength="7" class="text-xs font-mono text-slate-700 bg-transparent border-0 outline-none w-full p-0" placeholder="#ef4444" />
+								</div>
+							</div>
+							<div>
+								<div class="flex justify-between items-center mb-1.5">
+									<span class="label-sm mb-0">Line Width</span>
+									<span id="gpx-width-value" class="text-[9px] font-bold text-accent">4px</span>
+								</div>
+								<input type="range" id="gpx-width-slider" min="2" max="10" step="1" value="4" class="w-full h-1 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-accent" />
+							</div>
+						</div>
+
+						<button id="fit-gpx-btn" class="w-full py-2.5 px-3 rounded-xl bg-white border border-slate-200 shadow-sm text-[10px] font-bold text-slate-600 hover:border-blue-200 hover:bg-blue-50/30 hover:text-blue-600 transition-all flex items-center justify-center space-x-2">
+							<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M8 3H5a2 2 0 00-2 2v3m18 0V5a2 2 0 00-2-2h-3m0 18h3a2 2 0 002-2v-3M3 16v3a2 2 0 002 2h3" />
+							</svg>
+							<span>Fit Map to Track</span>
+						</button>
+
+						<p class="text-[9px] text-slate-400 italic text-center">Tip: Import a ride or run from Strava, Garmin, Coros and more. The track is drawn on the poster exactly as shown.</p>
+					</div>
 				</div>
 			</div>
 

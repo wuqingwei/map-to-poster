@@ -172,6 +172,10 @@ async function captureMapSnapshot() {
 				routeLayers.forEach(l => {
 					if (artisticMap.getLayer(l)) artisticMap.setLayoutProperty(l, 'visibility', 'none');
 				});
+				const gpxLayers = ['gpx-line', 'gpx-line-casing'];
+				gpxLayers.forEach(l => {
+					if (artisticMap.getLayer(l)) artisticMap.setLayoutProperty(l, 'visibility', 'none');
+				});
 
 				artisticMap.resize();
 
@@ -240,10 +244,33 @@ async function captureMapSnapshot() {
 					drawComplexRouteToCtx(ctx, points, color, themeBg, scaleFactor);
 				}
 
+				if (state.showGpx && state.gpxSegments && state.gpxSegments.length > 0) {
+					const zoom = artisticMap.getZoom();
+					const center = artisticMap.getCenter();
+					const scale = Math.pow(2, zoom) * 512;
+					const centerPoint = project(center.lat, center.lng, scale);
+
+					const theme = getSelectedArtisticTheme();
+					const segmentPoints = state.gpxSegments
+						.filter(seg => seg.length > 1)
+						.map(seg => seg.map(([lat, lon]) => {
+							const p = project(lat, lon, scale);
+							return {
+								x: (canvas.width / 2) + (p.x - centerPoint.x),
+								y: (canvas.height / 2) + (p.y - centerPoint.y)
+							};
+						}));
+
+					drawTrackToCtx(ctx, segmentPoints, state.gpxColor || '#EF4444', state.gpxWidth || 4, theme.bg || '#ffffff', scaleFactor);
+				}
+
 				const data = canvas.toDataURL('image/png');
 
 				routeLayers.forEach(l => {
 					if (artisticMap.getLayer(l)) artisticMap.setLayoutProperty(l, 'visibility', 'visible');
+				});
+				gpxLayers.forEach(l => {
+					if (artisticMap.getLayer(l)) artisticMap.setLayoutProperty(l, 'visibility', state.showGpx ? 'visible' : 'none');
 				});
 
 				artisticContainer.style.width = originalWidth;
@@ -331,6 +358,27 @@ async function captureMapSnapshot() {
 				drawComplexRouteToCtx(ctx, points, routeColor, themeBg, scaleFactor);
 			}
 
+			if (state.showGpx && state.gpxSegments && state.gpxSegments.length > 0) {
+				const map = getMapInstance();
+				const zoom = map.getZoom();
+				const center = map.getCenter();
+				const scaleMap = Math.pow(2, zoom) * 256;
+				const centerPoint = project(center.lat, center.lng, scaleMap);
+
+				const theme = getSelectedTheme();
+				const segmentPoints = state.gpxSegments
+					.filter(seg => seg.length > 1)
+					.map(seg => seg.map(([lat, lon]) => {
+						const p = project(lat, lon, scaleMap);
+						return {
+							x: (canvas.width / 2) + (p.x - centerPoint.x),
+							y: (canvas.height / 2) + (p.y - centerPoint.y)
+						};
+					}));
+
+				drawTrackToCtx(ctx, segmentPoints, state.gpxColor || '#EF4444', state.gpxWidth || 4, theme.background || '#ffffff', scaleFactor);
+			}
+
 			return canvas.toDataURL('image/png');
 		} catch (e) {
 			console.error('Gagal capture Leaflet Map:', e);
@@ -388,6 +436,48 @@ function drawComplexRouteToCtx(ctx, points, color, themeBg = '#ffffff', scaleFac
 
 	drawPoint(points[0].x, points[0].y, 'A');
 	drawPoint(points[points.length - 1].x, points[points.length - 1].y, 'B');
+}
+
+/**
+ * The imported GPX track on the poster canvas: one stroked path per segment (so gaps in
+ * the recording stay gaps), a casing pass in the theme background colour like the custom
+ * route, and plain start/finish dots (no A/B letters — those belong to the route).
+ */
+function drawTrackToCtx(ctx, segmentsPoints, color, lineWidth = 4, themeBg = '#ffffff', scaleFactor = 1) {
+	if (!segmentsPoints || segmentsPoints.length === 0) return;
+
+	const strokeSegments = (strokeStyle, width) => {
+		ctx.strokeStyle = strokeStyle;
+		ctx.lineWidth = width;
+		ctx.lineCap = 'round';
+		ctx.lineJoin = 'round';
+		for (const points of segmentsPoints) {
+			if (!points || points.length < 2) continue;
+			ctx.beginPath();
+			ctx.moveTo(points[0].x, points[0].y);
+			for (let i = 1; i < points.length; i++) {
+				ctx.lineTo(points[i].x, points[i].y);
+			}
+			ctx.stroke();
+		}
+	};
+
+	strokeSegments(themeBg, lineWidth * 2.25 * scaleFactor);
+	strokeSegments(color, lineWidth * scaleFactor);
+
+	const all = segmentsPoints.filter(s => s.length > 0);
+	if (all.length === 0) return;
+	const ends = [all[0][0], all[all.length - 1][all[all.length - 1].length - 1]];
+	const r = 5 * scaleFactor;
+	for (const pt of ends) {
+		ctx.beginPath();
+		ctx.arc(pt.x, pt.y, r, 0, Math.PI * 2);
+		ctx.fillStyle = color;
+		ctx.fill();
+		ctx.strokeStyle = '#ffffff';
+		ctx.lineWidth = 2 * scaleFactor;
+		ctx.stroke();
+	}
 }
 
 async function drawMarkerToCtx(ctx, x, y, color) {
