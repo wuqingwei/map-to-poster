@@ -236,32 +236,65 @@
 	].join(';');
 
 	// The poster button belongs inside the activity map, bottom-right, lined up
-	// with Strava's own controls: it sits immediately left of the orange
-	// "Start flyover" button, bottoms aligned, never covering it. If the map
-	// (or that button) is not on the page, fall back to a viewport-fixed pill.
-	function findMapContainer() {
-		const gl = document.querySelector('.maplibregl-map, .mapboxgl-map');
-		if (gl && gl.querySelector('canvas') && gl.offsetWidth > 300) return gl;
-		const fly = document.querySelector('button[aria-label="Start flyover"], button[aria-label*="flyover" i]');
-		let node = fly ? fly.parentElement : null;
-		while (node && node !== document.body) {
-			if (node.querySelector('canvas') && node.offsetWidth > 300 && node.offsetHeight > 150) return node;
-			node = node.parentElement;
+	// with Strava's own controls: immediately left of the bottom-right corner
+	// control (the orange "Start flyover" button), bottoms aligned, never
+	// covering it. Anchoring is geometric — Strava's DOM uses hashed class
+	// names and the flyover control is not reliably labelled — so locate the
+	// map by its canvas and the corner control by its position. If no map is
+	// on the page, fall back to a viewport-fixed pill.
+	function findMapRoot() {
+		let best = null;
+		for (const c of document.querySelectorAll('canvas')) {
+			const r = c.getBoundingClientRect();
+			if (r.width > 500 && r.height > 150 && (!best || r.width * r.height > best.area)) {
+				best = { canvas: c, area: r.width * r.height, rect: r };
+			}
 		}
-		return null;
+		if (!best) {
+			const gl = document.querySelector('.maplibregl-map, .mapboxgl-map');
+			if (gl && gl.offsetWidth > 300) return gl;
+			return null;
+		}
+		// The map root is the outermost ancestor that still exactly frames the
+		// canvas (MapLibre nests canvas-container wrappers of the same size).
+		let root = best.canvas;
+		let node = best.canvas.parentElement;
+		while (node && node !== document.body) {
+			const r = node.getBoundingClientRect();
+			if (Math.abs(r.width - best.rect.width) <= 2 && Math.abs(r.height - best.rect.height) <= 2) {
+				root = node;
+				node = node.parentElement;
+			} else break;
+		}
+		return root;
+	}
+
+	function findCornerControl(root) {
+		const rr = root.getBoundingClientRect();
+		let best = null;
+		for (const el of root.querySelectorAll('button, a, [role="button"]')) {
+			if (el.id === BTN_ID) continue;
+			const r = el.getBoundingClientRect();
+			if (r.width === 0 || r.height === 0) continue;
+			const nearBottom = rr.bottom - r.bottom < 70;
+			const inRightHalf = r.left > rr.left + rr.width / 2;
+			if (nearBottom && inRightHalf && (!best || r.left > best.left)) {
+				best = { left: r.left, bottom: r.bottom };
+			}
+		}
+		return best;
 	}
 
 	let lastPlacement = '';
 	function placeButton(btn) {
-		const container = findMapContainer();
-		const fly = container && container.querySelector('button[aria-label="Start flyover"], button[aria-label*="flyover" i]');
+		const container = findMapRoot();
+		const corner = container && findCornerControl(container);
 		let placement;
-		if (container && fly) {
+		if (container && corner) {
 			if (btn.parentElement !== container) container.appendChild(btn);
 			const cr = container.getBoundingClientRect();
-			const fr = fly.getBoundingClientRect();
-			const right = Math.max(8, Math.round(cr.right - fr.left + 8));
-			const bottom = Math.max(0, Math.round(cr.bottom - fr.bottom));
+			const right = Math.max(8, Math.round(cr.right - corner.left + 8));
+			const bottom = Math.max(0, Math.round(cr.bottom - corner.bottom));
 			placement = `position:absolute;right:${right}px;bottom:${bottom}px;z-index:10;padding:11px 16px;`;
 		} else if (container) {
 			if (btn.parentElement !== container) container.appendChild(btn);
